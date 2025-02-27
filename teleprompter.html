@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Revolution Teleprompter</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 1rem;
+            background-color: #111;
+        }
+
+        .teleprompter-container {
+            display: flex;
+            flex: 1;
+        }
+
+        .nav-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 5%;
+            min-width: 50px;
+            font-size: 2rem;
+            background-color: #111;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .nav-arrow:hover {
+            background-color: #333;
+        }
+
+        .teleprompter-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            text-align: center;
+            background-color: #000;
+        }
+
+        .context {
+            color: #3498db;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            max-width: 800px;
+        }
+
+        .speech {
+            color: white;
+            font-size: 3.5rem;
+            line-height: 1.4;
+            margin-bottom: 1.5rem;
+            max-width: 95%;
+            font-weight: bold;
+        }
+
+        .emotion {
+            color: #e74c3c;
+            font-size: 1.5rem;
+            max-width: 800px;
+        }
+
+        .visual {
+            display: none;
+            /* Hidden by default */
+            color: #2ecc71;
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            max-width: 800px;
+            font-style: italic;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: 1rem;
+            background-color: #111;
+        }
+
+        .controls button {
+            margin: 0 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #3498db;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+
+        .controls button.active {
+            background-color: #e74c3c;
+        }
+
+        .controls button.active:hover {
+            background-color: #c0392b;
+        }
+
+        @media (max-width: 768px) {
+            .speech {
+                font-size: 1.5rem;
+            }
+
+            .context,
+            .emotion {
+                font-size: 0.9rem;
+            }
+
+            .nav-arrow {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .speech {
+                font-size: 1.2rem;
+            }
+
+            .context,
+            .emotion {
+                font-size: 0.8rem;
+            }
+
+            .nav-arrow {
+                width: 15%;
+                min-width: 30px;
+                font-size: 1.2rem;
+            }
+        }
+
+        /* Transition effects */
+        .teleprompter-content>div {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .fade-in {
+            opacity: 1;
+        }
+
+        .fade-out {
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- <header>
+        <h1>AI Revolution Teleprompter</h1>
+    </header> -->
+
+    <div class="teleprompter-container">
+        <div class="nav-arrow" id="prev-arrow">
+            <i class="fas fa-chevron-left"></i>
+        </div>
+
+        <div class="teleprompter-content">
+            <div class="context" id="context"></div>
+            <div class="speech" id="speech"></div>
+            <div class="emotion" id="emotion"></div>
+            <div class="visual" id="visual"></div>
+        </div>
+
+        <div class="nav-arrow" id="next-arrow">
+            <i class="fas fa-chevron-right"></i>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="toggle-visual">Show/Hide Visuals</button>
+        <button id="reset">Reset</button>
+        <button id="auto-next"><i class="fas fa-play"></i> Auto</button>
+    </div>
+
+    <script>
+        // Script data parsed from the original content
+        const scriptData = [
+            {
+                context: "[Catchy Intro]",
+                speech: "AI…it's everywhere. Some say it's just hype, others call it the greatest revolution of our time.",
+                emotion: "{Mysterious / curious / energetic vibes}",
+                visual: "<Quick montage of futuristic AI visuals, flashing images of code, robotics, digital data streams>"
+            },
+            {
+                context: "[Catchy Intro]",
+                speech: "So, what is the truth?…Are we prepared for what's coming?",
+                emotion: "{Tension / intrigue}",
+                visual: "<Close-up on narrator's face, fade to black>"
+            },
+            {
+                context: "[Giving the whole context of the video]",
+                speech: "To find out, we went out into the field—exploring, researching, and looking for real answers.",
+                emotion: "{Adventurous & suspenseful sound}",
+                visual: "<Drone shot soaring over mountains or cityscape, transitioning to footage of traveling or investigating>"
+            },
+            {
+                context: "[Giving the whole context of the video]",
+                speech: "Join us on this journey to uncover the truth about AI's unstoppable rise…or is it?",
+                emotion: "{Anticipation}",
+                visual: "<Cut to scenic vista, possibly a cave or mountaintop view>"
+            },
+            {
+                context: "[Presentation]",
+                speech: "Hi, I'm Anaximandro Andrade, you can call me Anax—a Senior Software Engineer, Solutions Architect, and entrepreneur.",
+                emotion: "{Friendly / confident}",
+                visual: "<A-roll: Host speaking directly to camera in a well-lit studio>"
+            },
+            {
+                context: "[Presentation]",
+                speech: "I've built and managed web and mobile solutions used by hundreads of thousands of people around the globe.",
+                emotion: "{Pride / credibility}",
+                visual: "<B-roll of bustling office, servers, and app showcases>"
+            },
+            {
+                context: "[Presentation]",
+                speech: "And worked in projects for companies in Africa, Europe, South and North America",
+                emotion: "{Pride / credibility}",
+                visual: "<B-roll of bustling office, servers, and app showcases>"
+            },
+            {
+                context: "[Presentation]",
+                speech: "Today, we're diving headfirst into the AI revolution to ask one critical question: who's really in control—us or AI?",
+                emotion: "{Inviting / suspenseful}",
+                visual: "<Camera zoom-in on host's face, music swells slightly>"
+            },
+            {
+                context: "[AI history recap]",
+                speech: "First, let's rewind to where it all began: the 1950s. A time when visionary researchers believed machines could learn, reason, maybe even think like humans.",
+                emotion: "{Reflective / informative}",
+                visual: "<Archival black-and-white footage of early computers, images of the Dartmouth Conference>"
+            },
+            {
+                context: "[AI history recap]",
+                speech: "Alan Turing's, considered one of the fathers of computing, had a famous question—'Can machines think?'—ignited curiosity worldwide, planting the seed for what we now call Artificial Intelligence.",
+                emotion: "{Historic / enlightening}",
+                visual: "<Close-up of Turing's photographs, text of Turing's 1950 paper 'Computing Machinery and Intelligence'>"
+            },
+            {
+                context: "[AI history recap]",
+                speech: "From those humble beginnings, AI's goal was clear: replicate human intelligence—or even exceed it. Researchers envisioned computers that could learn on their own.",
+                emotion: "{Curious / forward-looking}",
+                visual: "<Infographics illustrating simple neural network diagrams, early symbolic AI experiments>"
+            },
+            {
+                context: "[AI history recap]",
+                speech: "But like any bold vision, the road wasn't smooth. By the 1970s, funding dried up, optimism collapsed, and the first 'AI Winter' set in.",
+                emotion: "{Tension / conflict}",
+                visual: "<Archival news headlines about AI disappointments, footage of abandoned labs>"
+            },
+            {
+                context: "[AI history recap]",
+                speech: "Still, pockets of progress remained—expert systems in the 1980s showed promise for medical diagnoses and complex decision-making.",
+                emotion: "{Hopeful / intriguing}",
+                visual: "<B-roll of old computer terminals, doctors using early AI-driven decision support systems>"
+            },
+            {
+                context: "[AI history recap]",
+                speech: "Then came another setback in the late 80s and early 90s: limited computing power, high costs, and unrealistic expectations led to a second 'AI Winter'.",
+                emotion: "{Conflict / reflective}",
+                visual: "<Dimly lit labs, images of outdated hardware, somber background music>"
+            },
+            {
+                context: "[AI history recap]",
+                speech: "Despite these hurdles, dedicated researchers kept pushing forward—turning data into the new 'fuel' for AI. With the internet boom of the 90s, suddenly there was more data than ever.",
+                emotion: "{Tension release / building anew}",
+                visual: "<Montage of early internet footage, dial-up modems, glimpses of massive data centers>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "Long before deep neural networks stole the spotlight, machine learning was powered by traditional algorithms—rooted in probability and statistics.",
+                emotion: "{Informative / introductory}",
+                visual: "<B-roll showing old textbooks on statistics, early computers crunching data>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "They might not sound flashy, but algorithms like Linear Regression, Logistic Regression, Naive Bayes, and Decision Trees formed the backbone of modern AI.",
+                emotion: "{Nostalgic / foundational}",
+                visual: "<Quick montage of equations on a whiteboard, basic flowcharts, classic ML diagrams>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "Linear Regression, for instance, was a go-to tool for predicting outcomes based on existing data—like forecasting sales or estimating house prices.",
+                emotion: "{Down-to-earth / example-driven}",
+                visual: "<Shots of real estate listings or sales charts, a simple line-of-best-fit graphic overlay on a scatter plot>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "You see, probability and statistics weren't just theories in textbooks; they gave computers a way to handle uncertainty—to make educated guesses based on patterns in data.",
+                emotion: "{Clarifying / accessible}",
+                visual: "<Simple animation of data points on a graph, highlighting how algorithms draw decision boundaries or fit a line>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "Logistic Regression, on the other hand, used probability to classify emails as spam or not spam. It asked: 'What's the chance this email is junk?' and then acted on it.",
+                emotion: "{Aha / relatable}",
+                visual: "<Split-screen: one side with an inbox marked 'Spam', the other side with normal emails, probability bars filling up>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "Naive Bayes was another early superstar—especially for text classification. It assumed each word in a message was independent, which sounds naive, but it worked surprisingly well.",
+                emotion: "{Slightly playful / explanatory}",
+                visual: "<On-screen text highlights: 'Word1 + Word2 + Word3 = Probability of Category'>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "Decision Trees took a more intuitive approach—splitting data into branches, like a game of 20 Questions, until they reached the final answer.",
+                emotion: "{Curious / engaging}",
+                visual: "<Graphic of a branching decision tree with yes/no splits, each branch ending in a label>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "For Natural Language Processing, older methods like Bag-of-Words or TF-IDF let computers 'read' text by counting how often each word appeared. Simple, but effective.",
+                emotion: "{Informative / grounding}",
+                visual: "<Visual demonstration: a text document turning into a cloud of words with frequency bars>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "Algorithms like these set the stage for bigger advances. They taught us the power of data, the importance of math fundamentals, and just how central probability is to AI.",
+                emotion: "{Reflective / forward-looking}",
+                visual: "<Transitioning shots: data labs, early computer scientists, modern AI labs>"
+            },
+            {
+                context: "[Machine Learning and NLP]",
+                speech: "But as data grew more complex, we needed more. That's where deep neural networks came in—taking these core ideas to astonishing new heights.",
+                emotion: "{Tension release leading to next build / anticipation}",
+                visual: "<Fade out with a montage blending classic algorithms and snippets of modern deep learning visuals>"
+            },
+            {
+                context: "[The next jump]",
+                speech: "In the 2000s, as computing power exploded, AI found fresh momentum. Scientists began training neural networks on unprecedented scales, and the dream resurfaced.",
+                emotion: "{Reinvigorating / optimistic}",
+                visual: "<Shots of modern computer clusters, supercomputers, headlines announcing big data>"
+            },
+            {
+                context: "[The next jump]",
+                speech: "Fast-forward to the 2010s—deep learning redefined the game. Researchers at places like Google, Facebook, and universities worldwide harnessed GPUs to train colossal models.",
+                emotion: "{Excited / celebratory}",
+                visual: "<Clips of academic conferences, GPU farms, early ImageNet competition footage>"
+            },
+            {
+                context: "[The next jump]",
+                speech: "This led to jaw-dropping results: computers recognizing images better than humans, translating languages, and even beating world champions at complex games.",
+                emotion: "{Inspirational / tension build}",
+                visual: "<Montage of key AI milestones: Deep Blue vs. Kasparov, AlphaGo vs. Lee Sedol, glimpses of self-driving cars>"
+            },
+            {
+                context: "[The next jump]",
+                speech: "And each breakthrough fueled a bigger question: Are we on the verge of something bigger—an intelligence explosion that transforms our world forever?",
+                emotion: "{Conflict / wonder}",
+                visual: "<Zoom in on a question mark or cosmic AI-themed graphic, slight dramatic pause>"
+            },
+            {
+                context: "[The next jump]",
+                speech: "Yet with every success story comes a wave of concern. Will AI surpass human capabilities? And if it does… what happens to us?",
+                emotion: "{Heightened tension / foreshadowing}",
+                visual: "<Cut to black-and-white footage of robots, quick shots of futuristic cityscapes>"
+            },
+            {
+                context: "[The next jump]",
+                speech: "We've come a long way from Turing's initial query, and the pace of progress only seems to be accelerating.",
+                emotion: "{Reflective / anticipatory}",
+                visual: "<Fade in to a futuristic city skyline, subtle music swells>"
+            },
+            {
+                context: "[The next jump]",
+                speech: "That's the story so far. But where exactly do we stand now? And more importantly—where are we heading next?",
+                emotion: "{Hook for next segment / building anticipation}",
+                visual: "<Camera slowly pans out, revealing present-day AI labs and bustling tech environments>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "Enter the age of Large Language Models—like GPT-3 and GPT-4—capable of generating human-like text and redefining how we interact with machines.",
+                emotion: "{Excited / in awe}",
+                visual: "<Screen recordings of AI chatbots producing text, code overlays>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "As these models digested billions of words, they began understanding context on a level we once thought impossible, reshaping communication, research, and even coding.",
+                emotion: "{Information-rich / explanatory}",
+                visual: "<Montage of researchers using LLMs, snippets of code, scientific articles>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "Then came generative models that create art—DALL·E, Midjourney, Stable Diffusion—transforming simple text prompts into stunning images that spark new waves of creativity.",
+                emotion: "{Surprised / amazed}",
+                visual: "<B-roll of AI-generated artworks, a time-lapse of images forming from text>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "We didn't stop at text or images: now we have multimodal AI, capable of understanding words, pictures, even audio and video, breaking barriers in communication and imagination.",
+                emotion: "{Futuristic / intriguing}",
+                visual: "<Examples of a chatbot interpreting an image, AI analyzing short video clips>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "For instance, GPT-4 can analyze a picture of a hand-drawn website sketch and generate functional code—bridging vision and language in ways we once only dreamed about.",
+                emotion: "{Astonishing / hopeful}",
+                visual: "<Side-by-side comparison: rough sketch and resulting coded webpage>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "Beyond the screen, robotics and automation now harness AI's power—self-driving cars navigate busy streets, and industrial robots learn to adapt on factory floors.",
+                emotion: "{Innovative / real-world impact}",
+                visual: "<Footage of autonomous vehicles, robots in manufacturing, warehouse automation>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "These breakthroughs aren't confined to tech companies; AI is revolutionizing healthcare, finance, education, and more—acting as a tireless assistant in daily tasks.",
+                emotion: "{Broad appeal / inclusive}",
+                visual: "<Montage: doctors reviewing AI-analyzed scans, financial dashboards, classrooms with digital aids>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "Still, with every leap forward, we ask: have we hit the peak of AI's potential? Or is this just the beginning?",
+                emotion: "{Tension / curiosity}",
+                visual: "<Quick-cut montage of question marks, news headlines about AI>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "It's tempting to think we've reached the pinnacle, but in truth, we're only scratching the surface. Each new advance teases possibilities that redefine 'impossible'.",
+                emotion: "{Build-up / suspense}",
+                visual: "<Dramatic slow-motion montage of AI milestones, shifting into future concept art>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "As more data, computing power, and research converge, these systems will grow exponentially—shaping economies, industries, and how we live day to day.",
+                emotion: "{Forward-looking / transformative}",
+                visual: "<Infographics showing exponential growth, global networks>"
+            },
+            {
+                context: "[Recent developments]",
+                speech: "The AI revolution isn't a distant future; it's unfolding around us right now, fueling creativity, driving innovation, and setting the stage for what comes next.",
+                emotion: "{Inspiring / forward momentum}",
+                visual: "<Fade-out with a blend of modern AI applications and glimpses of futuristic concepts>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "AI is moving beyond isolated tasks, becoming ever more integrated into our daily lives and adapting to a wide range of real-world challenges.",
+                emotion: "{Forward-looking / expansive}",
+                visual: "<Footage of smart home devices, AI-powered phones, and daily life scenarios>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "Tech giants like Google, Microsoft, OpenAI, and Meta are racing to push the boundaries of general intelligence, aiming to create systems that learn and reason across multiple domains.",
+                emotion: "{Competitive / high-stakes}",
+                visual: "<Logos and brief clips of these companies' AI labs, researchers at work>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "In the short term, we'll see AI embedded in everything from wearable health monitors to virtual personal assistants, driving convenience and boosting productivity.",
+                emotion: "{Excited / practical}",
+                visual: "<Close-ups of smartwatches, smartphone apps, voice-activated devices>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "Meanwhile, the pursuit of cost-effectiveness and energy efficiency is gaining momentum, as researchers strive to make these powerful models accessible to everyone.",
+                emotion: "{Optimistic / inclusive}",
+                visual: "<Data centers, energy-saving hardware innovations, graphs of cost-performance curves>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "Multimodal systems are poised to blend text, images, audio, and even video, enabling more seamless human–AI interactions in education, entertainment, and beyond.",
+                emotion: "{Envisioning / transformative}",
+                visual: "<Demonstrations of AI interpreting multiple data types, interactive learning platforms>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "On the robotics front, smarter AI-driven machines will navigate unpredictable environments, working alongside humans in factories, cities, and even our homes.",
+                emotion: "{Innovative / collaborative}",
+                visual: "<Robotic arms in industrial settings, home-assistant robots, driverless vehicles>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "Ethical considerations are front and center: as AI grows more influential, there's a global push for transparency, fairness, and accountability to guide future breakthroughs.",
+                emotion: "{Responsible / conscientious}",
+                visual: "<News clips on AI ethics, policymakers discussing regulations, diverse communities>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "Regulators are stepping up to define new laws and frameworks, aiming to strike a balance between fostering innovation and protecting society from potential pitfalls.",
+                emotion: "{Serious / balanced}",
+                visual: "<Brief shots of government hearings, roundtable discussions with tech leaders>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "Over the mid-term, we may witness quantum computing and other advanced technologies supercharge AI, unlocking new frontiers in medicine, finance, and climate solutions.",
+                emotion: "{Visionary / awe-inspired}",
+                visual: "<Conceptual graphics of quantum circuits, futuristic labs, climate research visuals>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "What we're seeing is the formation of a connected AI ecosystem—one that's driving toward more personalized, context-aware experiences at scale.",
+                emotion: "{Enthusiastic / expansive}",
+                visual: "<Montage of diverse AI applications: personalized shopping recommendations, virtual assistants learning user habits>"
+            },
+            {
+                context: "[Where we are heading?]",
+                speech: "In short, the stage is set for AI to redefine our work, our homes, and our horizons, as we step into an era where intelligence—both human and artificial—shapes the future together.",
+                emotion: "{Inspirational / unifying}",
+                visual: "<Wide shot of a futuristic skyline, people interacting seamlessly with AI-driven tools>"
+            },
+            {
+                context: "[What happens next?] [What are the risks and opportunities]",
+                speech: "So, let's address the elephant in the room: Is my job at risk?",
+                emotion: "{Concern / empathy}",
+                visual: "<Montage of worried faces, headlines about automation>"
+            },
+            {
+                context: "[What happens next?] [What are the risks and opportunities]",
+                speech: "We've heard it—robots stealing jobs, automation replacing entire industries…Is that the whole picture, or just part of it?",
+                emotion: "{Conflict / tension}",
+                visual: "<Street interviews with diverse individuals, some anxious, some optimistic>"
+            },
+            {
+                context: "[What happens next?] [What are the risks and opportunities]",
+                speech: "In reality, new roles are emerging—jobs that never existed before. The question isn't if AI will replace us, but rather how we'll adapt alongside it.",
+                emotion: "{Tension release / reassuring}",
+                visual: "<Clips of modern workplaces integrating AI, collaborative robotics>"
+            },
+            {
+                context: "[What happens next?] [What are the risks and opportunities]",
+                speech: "So how do we navigate a world where AI isn't just a tool but an integral part of our daily lives? We've envisioned three practical pathways—depending if you fit in one of three profiles: Someone with skills of manual work, handyman or any other manual labor, a Beginner programmer or tech curious, or a Seasoned Developer who is mid to senior level",
+                emotion: "{Encouraging / forward-looking}",
+                visual: "<A-roll of host speaking directly to camera, intercut with brief glimpses of people working in different environments—factories, co-working spaces, tech offices>"
+            },
+            {
+                context: "[What happens next?] [What are the risks and opportunities]",
+                speech: "Keep in mind, these aren't the only options out there—just the ones we where we'll focus our spotlight next.",
+                emotion: "{Inclusive / reassuring}",
+                visual: "<Transition shot: panoramic view of a bustling city, symbolic of diverse paths and opportunities>"
+            },
+            {
+                context: "[What happens next?] [As a manual worker]",
+                speech: "You might see more automated processes, but there will always be hands-on tasks that demand human judgment, dexterity, and empathy.",
+                emotion: "{Supportive / guiding}",
+                visual: "<Factory floor B-roll: workers collaborating with robotic arms>"
+            },
+            {
+                context: "[What happens next?] [As a manual worker]",
+                speech: "Yet, adapting is key—once you learn to operate or oversee these automated systems, you become indispensable in making sure the machines run smoothly.",
+                emotion: "{Empowering / practical}",
+                visual: "<Shots of construction sites or home renovation projects, highlighting areas where human oversight is crucial>"
+            },
+            {
+                context: "[What happens next?] [As a manual worker]",
+                speech: "For instance, AI-driven sensors might alert you to maintenance issues before they escalate, freeing you to focus on the real craft: repairing, building, or refining.",
+                emotion: "{Reassuring / forward-looking}",
+                visual: "<Close-up on a worker checking a smart sensor reading, then turning to fix a piece of machinery>"
+            },
+            {
+                context: "[What happens next?] [As a manual worker]",
+                speech: "Look for ways to specialize in tasks that robots can't easily replicate—like intricate carpentry, complex welding, or customer-facing roles that require trust and rapport.",
+                emotion: "{Inspirational / confidence-building}",
+                visual: "<Montage of specialized trades: a carpenter shaping wood, a welder making fine adjustments, a mechanic consulting with a client>"
+            },
+            {
+                context: "[What happens next?] [As a manual worker]",
+                speech: "Staying informed about new AI tools—like apps that track materials, blueprint readers, or wearable tech—can keep your processes efficient and help you stand out.",
+                emotion: "{Proactive / motivational}",
+                visual: "<Display of mobile construction apps, workers using tablets, wearable tech in action>"
+            },
+            {
+                context: "[What happens next?] [As a manual worker]",
+                speech: "By blending your practical experience with AI-driven insights, you can pinpoint opportunities, solve problems faster, and reduce costly mistakes.",
+                emotion: "{Optimistic / actionable}",
+                visual: "<Data visualizations overlayed on real-world tasks, emphasizing the human–AI synergy>"
+            },
+            {
+                context: "[What happens next?] [As a manual worker]",
+                speech: "At the end of the day, your hands-on knowledge remains priceless; AI just adds another layer of efficiency, safety, and innovation to what you already do best.",
+                emotion: "{Uplifting / reassuring}",
+                visual: "<Final transition shot of a confident worker surveying a completed project, upbeat music>"
+            },
+            {
+                context: "[What happens next?] [As a non-tech or beginner tech]",
+                speech: "You don't have to be a coding wizard—start by learning the basics of AI, or even how to craft the right prompts for AI tools.",
+                emotion: "{Encouraging / optimistic}",
+                visual: "<People watching tutorials, attending workshops, engaging in online coding communities>"
+            },
+            {
+                context: "[What happens next?] [As a non-tech or beginner tech]",
+                speech: "From simple data analysis to building small apps, it's never been easier to get your feet wet with programming and see tangible results fast.",
+                emotion: "{Motivational / reassuring}",
+                visual: "<Screens showing user-friendly coding platforms, step-by-step instructions, a quick demo of a basic web or mobile project>"
+            },
+            {
+                context: "[What happens next?] [As a non-tech or beginner tech]",
+                speech: "As you gain confidence, you'll realize coding is an invaluable skill that amplifies what AI can do—helping you create your own projects, automate tasks, or even launch a startup.",
+                emotion: "{Inspirational / ambitious}",
+                visual: "<B-roll of a small team brainstorming, lines of code turning into a working prototype, a celebratory 'product launch' moment>"
+            },
+            {
+                context: "[What happens next?] [As a non-tech or beginner tech]",
+                speech: "Basic programming fundamentals, combined with AI, can open doors: build chatbots, create image processing apps, or experiment with data-driven decision-making, all on a budget.",
+                emotion: "{Opportunity-focused / practical}",
+                visual: "<Split-screen showing different beginner-level AI projects, from text classifiers to simple image filters>"
+            },
+            {
+                context: "[What happens next?] [As a non-tech or beginner tech]",
+                speech: "And if you're serious about accelerating your skills, our future course 'Zero to Coding' will guide you step by step—from absolute beginner to confident builder of real-world solutions.",
+                emotion: "{Invitational / supportive}",
+                visual: "<Text overlay: \"Zero to Coding – Coming Soon!\", with a quick teaser of lesson modules>"
+            },
+            {
+                context: "[What happens next?] [As a non-tech or beginner tech]",
+                speech: "Remember, the tech landscape is vast, but with curiosity and a willingness to learn, you can make AI work for you, no matter your background or starting point.",
+                emotion: "{Inclusive / hopeful}",
+                visual: "<Shots of diverse groups of people coding, collaborating online, and celebrating small wins>"
+            },
+            {
+                context: "[What happens next?] [As a non-tech or beginner tech]",
+                speech: "After all, once you've got that solid foundation, the potential to shape your own AI-powered ideas—and bring them to life—is practically limitless.",
+                emotion: "{Exciting / empowering}",
+                visual: "<Final cut: success stories, short clips of AI-assisted projects in action, upbeat music swell>"
+            },
+            {
+                context: "[What happens next?] [As medium & advanced tech]",
+                speech: "Your skills already stand above the basics—now it's time to dive deeper: explore cutting-edge AI frameworks, advanced data strategies, and even the ethical implications of what you build.",
+                emotion: "{Challenging / forward-looking}",
+                visual: "<Shots of tech conferences, teams coding in collaborative spaces, snippets of advanced code on screens>"
+            },
+            {
+                context: "[What happens next?] [As medium & advanced tech]",
+                speech: "By mastering AI-driven tools, you can automate repetitive tasks, streamline workflows, and free yourself to tackle creative solutions that truly make an impact.",
+                emotion: "{Empowering / ambitious}",
+                visual: "<B-roll of developers using advanced code libraries, integrated CI/CD pipelines, and custom automation scripts>"
+            },
+            {
+                context: "[What happens next?] [As medium & advanced tech]",
+                speech: "Stay connected with the community—contribute to open-source projects, join developer meetups, and keep learning from breakthroughs at the frontier of AI research.",
+                emotion: "{Social / knowledge-sharing}",
+                visual: "<Online forum interactions, open-source contribution platforms like GitHub, quick cuts of meetup presentations>"
+            },
+            {
+                context: "[What happens next?] [As medium & advanced tech]",
+                speech: "When you push beyond comfort zones, you'll discover new opportunities—perhaps it's launching your own AI startup, leading innovative solutions in your company, or training the next wave of developers.",
+                emotion: "{Inspirational / forward momentum}",
+                visual: "<Close-ups of whiteboarding sessions, glimpses of startup pitches, mentorship moments>"
+            },
+            {
+                context: "[What happens next?] [As medium & advanced tech]",
+                speech: "Alongside technical excellence, remember that an ethical, user-first mindset can differentiate you—earning trust and shaping products that genuinely improve lives.",
+                emotion: "{Responsible / visionary}",
+                visual: "<Developers discussing data privacy, diverse user testing, presentations on algorithmic fairness>"
+            },
+            {
+                context: "[What happens next?] [As medium & advanced tech]",
+                speech: "The fusion of your expertise with AI technologies can unlock new businesses, products, and solutions—transforming complex ideas into market-ready innovation.",
+                emotion: "{Entrepreneurial / problem-solving}",
+                visual: "<Short montage: from concept sketches to prototypes, ending with a launched product in real-world use>"
+            },
+            {
+                context: "[What happens next?] [As medium & advanced tech]",
+                speech: "If you keep building, keep learning, and keep pushing boundaries, you'll stay at the forefront—ready to solve real-world problems and shape the future of tech on your own terms.",
+                emotion: "{Uplifting / empowering}",
+                visual: "<Final transition: scenes of satisfied clients using AI-driven apps, celebratory team moment>"
+            },
+            {
+                context: "[What happens next?] [Talk About leverage AI]",
+                speech: "As you can see, pretty much anywone can evolve and leverage the power of AI to their bennefit",
+                emotion: "",
+                visual: ""
+            },
+            {
+                context: "[Close]",
+                speech: "The AI revolution isn't just about technology; it's about us—our capacity to learn, adapt, and shape a future alongside these incredible tools.",
+                emotion: "{Reflective / hopeful}",
+                visual: "<A-roll: host speaking directly to camera with gentle, uplifting music>"
+            },
+            {
+                context: "[Close]",
+                speech: "In our upcoming videos, we'll break down each piece—AI evolution, job shifts, hands-on demonstrations—so stay tuned.",
+                emotion: "{Teasing / anticipation}",
+                visual: "<Lower third graphic promoting 'Next Episodes'>"
+            },
+            {
+                context: "[Close]",
+                speech: "We're also launching a course where you can learn practical AI skills—check the link below for early access. Don't miss it!",
+                emotion: "{Excitement / invitation}",
+                visual: "<Overlay text with website or QR code, upbeat background music>"
+            },
+            {
+                context: "[Close]",
+                speech: "So… is AI really taking over, or are we just scratching the surface? I'll leave that for you to decide. Until next time.",
+                emotion: "{Cliffhanger / thought-provoking}",
+                visual: "<Fade to black with final graphic or logo, music fades out>"
+            }
+        ];
+
+        // Initialize variables
+        let currentSlide = 0;
+        let visualsVisible = false;
+        let autoNextTimer = null;
+        let autoNextActive = false;
+        const AUTO_NEXT_DELAY = 15000; // 15 seconds
+
+        // Get DOM elements
+        const contextElement = document.getElementById('context');
+        const speechElement = document.getElementById('speech');
+        const emotionElement = document.getElementById('emotion');
+        const visualElement = document.getElementById('visual');
+        const prevArrow = document.getElementById('prev-arrow');
+        const nextArrow = document.getElementById('next-arrow');
+        const toggleVisualButton = document.getElementById('toggle-visual');
+        const resetButton = document.getElementById('reset');
+        const autoNextButton = document.getElementById('auto-next');
+
+        // Function to start auto-next timer
+        function startAutoNext() {
+            stopAutoNext(); // Clear any existing timer
+            autoNextActive = true;
+            autoNextButton.classList.add('active');
+            autoNextButton.innerHTML = '<i class="fas fa-pause"></i> Auto';
+
+            autoNextTimer = setInterval(() => {
+                if (currentSlide < scriptData.length - 1) {
+                    currentSlide++;
+                    updateTeleprompter();
+                } else {
+                    stopAutoNext(); // Stop when reaching the end
+                }
+            }, AUTO_NEXT_DELAY);
+        }
+
+        // Function to stop auto-next timer
+        function stopAutoNext() {
+            if (autoNextTimer) {
+                clearInterval(autoNextTimer);
+                autoNextTimer = null;
+            }
+            autoNextActive = false;
+            autoNextButton.classList.remove('active');
+            autoNextButton.innerHTML = '<i class="fas fa-play"></i> Auto';
+        }
+
+        // Function to toggle auto-next
+        function toggleAutoNext() {
+            if (autoNextActive) {
+                stopAutoNext();
+            } else {
+                startAutoNext();
+            }
+        }
+
+        // Function to update the teleprompter content
+        function updateTeleprompter() {
+            const slide = scriptData[currentSlide];
+
+            // Fade out
+            contextElement.classList.add('fade-out');
+            speechElement.classList.add('fade-out');
+            emotionElement.classList.add('fade-out');
+            visualElement.classList.add('fade-out');
+
+            // Update content after a brief delay
+            setTimeout(() => {
+                contextElement.textContent = slide.context;
+                speechElement.textContent = slide.speech;
+                emotionElement.textContent = slide.emotion;
+                visualElement.textContent = slide.visual;
+
+                // Fade in
+                contextElement.classList.remove('fade-out');
+                speechElement.classList.remove('fade-out');
+                emotionElement.classList.remove('fade-out');
+                visualElement.classList.remove('fade-out');
+            }, 300);
+        }
+
+        // Event listeners
+        prevArrow.addEventListener('click', () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateTeleprompter();
+            }
+        });
+
+        nextArrow.addEventListener('click', () => {
+            if (currentSlide < scriptData.length - 1) {
+                currentSlide++;
+                updateTeleprompter();
+            }
+        });
+
+        toggleVisualButton.addEventListener('click', () => {
+            visualsVisible = !visualsVisible;
+            visualElement.style.display = visualsVisible ? 'block' : 'none';
+        });
+
+        resetButton.addEventListener('click', () => {
+            currentSlide = 0;
+            updateTeleprompter();
+            stopAutoNext(); // Stop auto-next when resetting
+        });
+
+        autoNextButton.addEventListener('click', toggleAutoNext);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' && currentSlide > 0) {
+                currentSlide--;
+                updateTeleprompter();
+            } else if (e.key === 'ArrowRight' && currentSlide < scriptData.length - 1) {
+                currentSlide++;
+                updateTeleprompter();
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                // Space bar to toggle auto-next
+                toggleAutoNext();
+                e.preventDefault(); // Prevent scrolling
+            }
+        });
+
+        // Touch swipe support for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50 && currentSlide < scriptData.length - 1) {
+                // Swipe left
+                currentSlide++;
+                updateTeleprompter();
+            } else if (touchEndX > touchStartX + 50 && currentSlide > 0) {
+                // Swipe right
+                currentSlide--;
+                updateTeleprompter();
+            }
+        }
+
+        // Initialize the teleprompter
+        updateTeleprompter();
+    </script>
+</body>
+
+</html>
