@@ -58,6 +58,7 @@
             padding: 2rem;
             text-align: center;
             background-color: #000;
+            position: relative;
         }
 
         .context {
@@ -165,6 +166,49 @@
         .fade-out {
             opacity: 0;
         }
+
+        .counter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 3rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .remote-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-connected {
+            background-color: #2ecc71;
+        }
+
+        .status-disconnected {
+            background-color: #e74c3c;
+        }
     </style>
 </head>
 
@@ -179,6 +223,11 @@
         </div>
 
         <div class="teleprompter-content">
+            <div class="counter" id="counter"></div>
+            <div class="remote-status" id="remote-status">
+                <span class="status-indicator status-disconnected" id="status-indicator"></span>
+                <span>Remote</span>
+            </div>
             <div class="context" id="context"></div>
             <div class="speech" id="speech"></div>
             <div class="emotion" id="emotion"></div>
@@ -542,7 +591,7 @@
                 visual: "<Clips of modern workplaces integrating AI, collaborative robotics>"
             },
             {
-                context: "[What happens next?] [What are the risks and opportunities]",
+                context: "[What happens next?] [What are the -risks and opportunities]",
                 speech: "So how do we navigate a world where AI isn't just a tool but an integral part of our daily lives? We've envisioned three practical pathways—depending if you fit in one of three profiles: Someone with skills of manual work, handyman or any other manual labor, a Beginner programmer or tech curious, or a Seasoned Developer who is mid to senior level",
                 emotion: "{Encouraging / forward-looking}",
                 visual: "<A-roll of host speaking directly to camera, intercut with brief glimpses of people working in different environments—factories, co-working spaces, tech offices>"
@@ -717,17 +766,120 @@
         let autoNextTimer = null;
         let autoNextActive = false;
         const AUTO_NEXT_DELAY = 15000; // 15 seconds
+        let socket;
 
         // Get DOM elements
         const contextElement = document.getElementById('context');
         const speechElement = document.getElementById('speech');
         const emotionElement = document.getElementById('emotion');
         const visualElement = document.getElementById('visual');
+        const counterElement = document.getElementById('counter');
+        const statusIndicator = document.getElementById('status-indicator');
         const prevArrow = document.getElementById('prev-arrow');
         const nextArrow = document.getElementById('next-arrow');
         const toggleVisualButton = document.getElementById('toggle-visual');
         const resetButton = document.getElementById('reset');
         const autoNextButton = document.getElementById('auto-next');
+
+        // WebSocket connection
+        function connectWebSocket() {
+            // Get the current hostname and use it for WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname;
+            const port = window.location.port || (protocol === 'wss:' ? '443' : '80');
+
+            socket = new WebSocket(`${protocol}//${host}:${port}`);
+
+            socket.onopen = function () {
+                console.log('Connected to WebSocket server');
+                statusIndicator.classList.remove('status-disconnected');
+                statusIndicator.classList.add('status-connected');
+
+                // Send initial state to any remote controls that might be connected
+                broadcastState();
+            };
+
+            socket.onclose = function () {
+                console.log('Disconnected from WebSocket server');
+                statusIndicator.classList.remove('status-connected');
+                statusIndicator.classList.add('status-disconnected');
+
+                // Try to reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            // Fix: Remove typo 'dxcv' that was breaking the code
+            socket.onmessage = function (event) {
+                console.log('Received message:', event.data);
+
+                try {
+                    const message = JSON.parse(event.data);
+                    handleRemoteCommand(message);
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            };
+
+            socket.onerror = function (error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Handle commands from remote control
+        function handleRemoteCommand(message) {
+            console.log('Processing command:', message.command);
+
+            switch (message.command) {
+                case 'prev':
+                    if (currentSlide > 0) {
+                        currentSlide--;
+                        updateTeleprompter();
+                    }
+                    break;
+
+                case 'next':
+                    if (currentSlide < scriptData.length - 1) {
+                        currentSlide++;
+                        updateTeleprompter();
+                    }
+                    break;
+
+                case 'toggleAuto':
+                    toggleAutoNext();
+                    break;
+
+                case 'toggleVisuals':
+                    visualsVisible = !visualsVisible;
+                    visualElement.style.display = visualsVisible ? 'block' : 'none';
+                    broadcastState();
+                    break;
+
+                case 'reset':
+                    currentSlide = 0;
+                    updateTeleprompter();
+                    stopAutoNext();
+                    break;
+
+                case 'getState':
+                    broadcastState();
+                    break;
+            }
+        }
+
+        // Broadcast current state to remote controls
+        function broadcastState() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const state = {
+                    type: 'stateUpdate',
+                    currentSlide,
+                    totalSlides: scriptData.length,
+                    isAutoActive: autoNextActive,
+                    isVisualsVisible: visualsVisible
+                };
+
+                socket.send(JSON.stringify(state));
+            }
+        }
 
         // Function to start auto-next timer
         function startAutoNext() {
@@ -744,6 +896,8 @@
                     stopAutoNext(); // Stop when reaching the end
                 }
             }, AUTO_NEXT_DELAY);
+
+            broadcastState();
         }
 
         // Function to stop auto-next timer
@@ -755,6 +909,8 @@
             autoNextActive = false;
             autoNextButton.classList.remove('active');
             autoNextButton.innerHTML = '<i class="fas fa-play"></i> Auto';
+
+            broadcastState();
         }
 
         // Function to toggle auto-next
@@ -771,6 +927,7 @@
             const slide = scriptData[currentSlide];
 
             // Fade out
+            counterElement.classList.add('fade-out');
             contextElement.classList.add('fade-out');
             speechElement.classList.add('fade-out');
             emotionElement.classList.add('fade-out');
@@ -778,16 +935,22 @@
 
             // Update content after a brief delay
             setTimeout(() => {
+                // Update counter (current slide + 1) / total slides
+                counterElement.textContent = `${currentSlide + 1}  /  ${scriptData.length}`;
                 contextElement.textContent = slide.context;
                 speechElement.textContent = slide.speech;
                 emotionElement.textContent = slide.emotion;
                 visualElement.textContent = slide.visual;
 
                 // Fade in
+                counterElement.classList.remove('fade-out');
                 contextElement.classList.remove('fade-out');
                 speechElement.classList.remove('fade-out');
                 emotionElement.classList.remove('fade-out');
                 visualElement.classList.remove('fade-out');
+
+                // Broadcast state update to remote controls
+                broadcastState();
             }, 300);
         }
 
@@ -809,6 +972,7 @@
         toggleVisualButton.addEventListener('click', () => {
             visualsVisible = !visualsVisible;
             visualElement.style.display = visualsVisible ? 'block' : 'none';
+            broadcastState();
         });
 
         resetButton.addEventListener('click', () => {
@@ -859,8 +1023,9 @@
             }
         }
 
-        // Initialize the teleprompter
+        // Initialize the teleprompter and WebSocket connection
         updateTeleprompter();
+        connectWebSocket();
     </script>
 </body>
 

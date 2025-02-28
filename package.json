@@ -1,0 +1,14 @@
+{
+  "name": "video-teleprompter",
+  "version": "1.0.0",
+  "description": "A teleprompter with remote control capability",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "install-deps": "npm install"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  }
+}

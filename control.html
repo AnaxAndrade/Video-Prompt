@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teleprompter Remote Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .connected {
+            background-color: #1e4620;
+            color: #4caf50;
+        }
+
+        .disconnected {
+            background-color: #4a1c1c;
+            color: #f44336;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 8px;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            width: 200px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .big-button {
+            width: 175px;
+        }
+
+        .auto-button {
+            background-color: #27ae60;
+        }
+
+        .auto-button.active {
+            background-color: #c0392b;
+        }
+
+        .reset-button {
+            background-color: #e74c3c;
+        }
+
+        .visuals-button {
+            background-color: #9b59b6;
+        }
+
+        .info-row {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .current-slide {
+            font-size: 1.5rem;
+            margin-top: 30px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Teleprompter Remote</h1>
+
+    <div class="status disconnected" id="status">Disconnected</div>
+
+    <div class="current-slide" id="current-slide">Slide: 0/0</div>
+
+    <div class="controls">
+        <div class="row">
+            <button id="prev-btn"><i class="fas fa-chevron-left fa-2x"></i></button>
+            <button id="next-btn"><i class="fas fa-chevron-right fa-2x"></i></button>
+        </div>
+
+        <div class="row">
+            <button class="big-button reset-button" id="reset-btn">
+                <i class="fas fa-undo-alt"></i> Reset
+            </button>
+        </div>
+
+        <div class="row">
+            <button class="big-button auto-button" id="auto-btn">
+                <i class="fas fa-play"></i> Auto
+            </button>
+        </div>
+
+        <div class="row">
+            <button class="big-button visuals-button" id="visuals-btn">
+                <i class="fas fa-eye"></i> Visuals
+            </button>
+        </div>
+
+    </div>
+
+    <div class="info-row" id="ip-info">
+        To control your teleprompter, open it on your iPad using this device's network.
+    </div>
+
+    <script>
+        let socket;
+        let isAutoActive = false;
+        let isVisualsVisible = false;
+
+        const statusEl = document.getElementById('status');
+        const currentSlideEl = document.getElementById('current-slide');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const autoBtn = document.getElementById('auto-btn');
+        const visualsBtn = document.getElementById('visuals-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Connect to WebSocket server
+        function connectWebSocket() {
+            // Get the current hostname and use it for WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.hostname;
+            const port = window.location.port || (protocol === 'wss:' ? '443' : '80');
+
+            socket = new WebSocket(`${protocol}//${host}:${port}`);
+
+            socket.onopen = function () {
+                console.log('Connected to WebSocket server');
+                statusEl.textContent = 'Connected';
+                statusEl.classList.remove('disconnected');
+                statusEl.classList.add('connected');
+
+                // Request current state from teleprompter
+                sendCommand('getState');
+            };
+
+            socket.onclose = function () {
+                console.log('Disconnected from WebSocket server');
+                statusEl.textContent = 'Disconnected - Reconnecting...';
+                statusEl.classList.remove('connected');
+                statusEl.classList.add('disconnected');
+
+                // Try to reconnect after 3 seconds
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            socket.onmessage = function (event) {
+                console.log('Received message:', event.data);
+
+                try {
+                    const data = JSON.parse(event.data);
+
+                    if (data.type === 'stateUpdate') {
+                        updateUI(data);
+                    }
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            };
+
+            socket.onerror = function (error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        // Send command to teleprompter
+        function sendCommand(command, data = {}) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const message = JSON.stringify({
+                    command,
+                    ...data
+                });
+                console.log('Sending command:', message);
+                socket.send(message);
+
+                // Provide visual feedback when command is sent
+                const button = document.activeElement;
+                if (button && button.tagName === 'BUTTON') {
+                    const originalColor = button.style.backgroundColor;
+                    button.style.backgroundColor = '#e67e22';
+                    setTimeout(() => {
+                        button.style.backgroundColor = originalColor;
+                    }, 200);
+                }
+            } else {
+                console.warn('Cannot send command - socket not connected');
+                statusEl.textContent = 'Not connected - reconnecting...';
+                statusEl.classList.remove('connected');
+                statusEl.classList.add('disconnected');
+                setTimeout(connectWebSocket, 1000);
+            }
+        }
+
+        // Update UI based on state from teleprompter
+        function updateUI(data) {
+            if ('currentSlide' in data && 'totalSlides' in data) {
+                currentSlideEl.textContent = `Slide: ${data.currentSlide + 1}/${data.totalSlides}`;
+            }
+
+            if ('isAutoActive' in data) {
+                isAutoActive = data.isAutoActive;
+                if (isAutoActive) {
+                    autoBtn.classList.add('active');
+                    autoBtn.innerHTML = '<i class="fas fa-pause"></i> Auto';
+                } else {
+                    autoBtn.classList.remove('active');
+                    autoBtn.innerHTML = '<i class="fas fa-play"></i> Auto';
+                }
+            }
+
+            if ('isVisualsVisible' in data) {
+                isVisualsVisible = data.isVisualsVisible;
+                visualsBtn.innerHTML = isVisualsVisible
+                    ? '<i class="fas fa-eye-slash"></i> Hide'
+                    : '<i class="fas fa-eye"></i> Show';
+            }
+        }
+
+        // Add event listeners for buttons
+        prevBtn.addEventListener('click', () => sendCommand('prev'));
+        nextBtn.addEventListener('click', () => sendCommand('next'));
+        autoBtn.addEventListener('click', () => sendCommand('toggleAuto'));
+        visualsBtn.addEventListener('click', () => sendCommand('toggleVisuals'));
+        resetBtn.addEventListener('click', () => sendCommand('reset'));
+
+        // Handle keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowLeft':
+                    sendCommand('prev');
+                    break;
+                case 'ArrowRight':
+                    sendCommand('next');
+                    break;
+                case ' ':
+                    sendCommand('toggleAuto');
+                    e.preventDefault();
+                    break;
+                case 'v':
+                    sendCommand('toggleVisuals');
+                    break;
+                case 'r':
+                    sendCommand('reset');
+                    break;
+            }
+        });
+
+        // Initialize WebSocket connection
+        connectWebSocket();
+    </script>
+</body>
+
+</html>
