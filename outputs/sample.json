@@ -1,0 +1,26 @@
+[
+    {
+        "context": "[The context]",
+        "speech": "The text you will be speaking.",
+        "emotion": "{Emotion / to convey}",
+        "visual": "<What are you showing on screen, when editing the vídeo>"
+    },
+    {
+        "context": "[The context] [Can be nested]",
+        "speech": "So, what do you think about this?",
+        "emotion": "{Curiosity / to engage}",
+        "visual": "<Montage of worried faces, headlines about automation>"
+    },
+    {
+        "context": "[Recent developments]",
+        "speech": "Enter the age of Large Language Models—like GPT-3 and GPT-4—capable of generating human-like text and redefining how we interact with machines.",
+        "emotion": "{Excited / in awe}",
+        "visual": "<Screen recordings of AI chatbots producing text, code overlays>"
+    },
+    {
+        "context": "[Recent developments]",
+        "speech": "As these models digested billions of words, they began understanding context on a level we once thought impossible, reshaping communication, research, and even coding.",
+        "emotion": "{Information-rich / explanatory}",
+        "visual": "<Montage of researchers using LLMs, snippets of code, scientific articles>"
+    }
+]

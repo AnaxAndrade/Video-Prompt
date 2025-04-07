@@ -282,7 +282,7 @@
     <div class="controls">
         <div class="file-selector">
             <select id="file-dropdown" title="Select presentation file">
-                <option value="outputs/data.json">Default Presentation</option>
+                <option value="outputs/sample.json">Default Presentation</option>
                 <!-- Options will be populated dynamically -->
             </select>
         </div>
@@ -294,7 +294,7 @@
     <script>
         // Declare an empty variable to hold the data
         let scriptData = [];
-        let currentFilePath = 'outputs/data.json'; // Default file path
+        let currentFilePath = 'outputs/sample.json'; // Default file path
 
         // Function to load file list from outputs directory
         function loadFileList() {
@@ -318,7 +318,7 @@
                     });
 
                     // If current file is in the list, select it
-                    if (currentFilePath !== 'outputs/data.json') {
+                    if (currentFilePath !== 'outputs/sample.json') {
                         dropdown.value = currentFilePath;
                     }
                 })
@@ -352,7 +352,7 @@
         }
 
         // Fetch external JSON file and initialize teleprompter when data is loaded
-        loadScriptData('outputs/data.json').then(() => {
+        loadScriptData('outputs/sample.json').then(() => {
             // Load the file list after initial setup
             loadFileList();
         });
