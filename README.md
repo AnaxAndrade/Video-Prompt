@@ -29,3 +29,8 @@ npm start
 * **NOTES:** 
 * your-local-ip should be your machine ip address on the network
 * When you navigate to the web UI you will have the chance to switch between script files (those listed in file-list.json)
+
+### Main View
+![Main Page](resources/main-page.png)
+### Remote control page
+![Remote Control Page](resources/control-page.png)
